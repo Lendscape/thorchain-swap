@@ -23,8 +23,19 @@ const useStyles = makeStyles((theme) => {
                     justifyContent: "center",
                     marginTop: "44px",
                 },
-                "& .token": {
-                    marginTop: "30px",
+                "& .sendtoken": {
+                    marginTop: "60px",
+                    "& .amount-input": {
+                        height: "40px",
+                    },
+                    "& .asset": {
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "end",
+                    },
+                },
+                "& .receivetoken": {
+                    marginTop: "40px",
                     "& .amount-input": {
                         height: "40px",
                     },
@@ -35,7 +46,7 @@ const useStyles = makeStyles((theme) => {
                     },
                 },
                 "& .action": {
-                    marginTop: "40px",
+                    marginTop: "60px",
                     display: "flex",
                     justifyContent: "center",
                 },

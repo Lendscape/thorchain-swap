@@ -2,11 +2,28 @@ import React, { useState, useEffect } from "react";
 
 import { Network } from "@xchainjs/xchain-client";
 import { useSelector } from "react-redux";
-import { Client as bitcoinCashClient } from "@xchainjs/xchain-bitcoincash";
+import {
+    Client as bitcoinCashClient,
+    BCH_DECIMAL,
+} from "@xchainjs/xchain-bitcoincash";
 import { Client as bitcoinClient } from "@xchainjs/xchain-bitcoincash";
 import { Client as binanceClient } from "@xchainjs/xchain-binance";
-import { Client as ethereumClient } from "@xchainjs/xchain-ethereum";
+import {
+    Client as ethereumClient,
+    ETH_DECIMAL,
+} from "@xchainjs/xchain-ethereum";
 import { Client as thorchainClient } from "@xchainjs/xchain-thorchain";
+import {
+    AssetBCH,
+    AssetETH,
+    AssetLTC,
+    AssetBTC,
+    AssetRuneNative,
+    AssetBNB,
+    assetToBase,
+    assetAmount,
+} from "@xchainjs/xchain-util";
+
 // Import Material UI Components
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -24,131 +41,246 @@ import SwapVertIcon from "@mui/icons-material/SwapVert";
 
 import { Assets } from "../assets/constants/wallets";
 import useStyles from "../assets/constants/styles";
-import {
-    deposit_bch,
-    deposit_bnb,
-    deposit_btc,
-    deposit_ltc,
-    deposit_eth,
-    deposit_rune,
-    deposit_busd,
-    deposit_usdt,
-} from "../assets/constants/deposit";
 
 const Content = () => {
     const classes = useStyles();
-    const [fAmount, setFAmount] = useState();
-    const [sAmount, setSAmount] = useState();
-    const [isOpen, setIsOpen] = useState(false);
-    const [chain, setChain] = useState("BNB");
-    const [multichain, setMultichain] = useState("BNBLUNE");
+    const [sendAmount, setSendAmount] = useState();
+    const [receiveAmount, setReceiveAmount] = useState();
+    const [isOpenAssetMdl, setIsOpenAssetMdl] = useState(false);
+    const [sendAsset, setSendAsset] = useState("BNB");
+    const [receiveAsset, setReceiveAsset] = useState("RUNE");
     const [choose, setChoose] = useState(1);
     const phrase = useSelector((store) => store.provider.phrase);
     let network_val = useSelector((store) => store.provider.network);
 
-    const onItemClick = (item) => {
-        setChain(item.title);
-        setIsOpen(false);
+    const onAssetClick = (item) => {
+        if (choose === 1) {
+            setSendAsset(item.title);
+        } else {
+            setReceiveAsset(item.title);
+        }
+        setIsOpenAssetMdl(false);
     };
-    const handleClose = () => {
-        setIsOpen(false);
+    const onCloseAssetModal = () => {
+        setIsOpenAssetMdl(false);
+    };
+
+    const onClickAssetMdl = (type) => {
+        setChoose(type);
+        setIsOpenAssetMdl(true);
+    };
+
+    const onClickExchange = () => {
+        const sAsset = sendAsset;
+        const rAsset = receiveAsset;
+        setReceiveAsset(sAsset);
+        setSendAsset(rAsset);
     };
 
     const onChangeFirst = (value) => {
-        setFAmount(value);
-        if (choose === 2) {
-            if (chain === "BNB") {
-                setSAmount(2553.09 * value);
-            } else if (chain === "BTC") {
-                setSAmount(310011 * value);
-            } else if (chain === "ETH") {
-                setSAmount(1027.16 * value);
-            } else if (chain === "BUSD") {
-                setSAmount(0.211664 * value);
-            } else if (chain === "USDT") {
-                setSAmount(594.631 * value);
-            } else if (chain === "BCH") {
-                setSAmount(7227.86 * value);
-            }
-        }
+        setSendAmount(value);
     };
 
     const onChangeSecond = (value) => {
-        console.log(value, "value");
-        setSAmount(value);
-        if (choose === 2) {
-            if (chain === "BNB") {
-                setFAmount(0.000391624 * value);
-            } else if (chain === "BTC") {
-                setFAmount(0.00000322568 * value);
-            } else if (chain === "ETH") {
-                setFAmount(0.000973448 * value);
-            } else if (chain === "BUSD") {
-                setFAmount(4.72446 * value);
-            } else if (chain === "USDT") {
-                setFAmount(0.00168171 * value);
-            } else if (chain === "BCH") {
-                setFAmount(0.000138352 * value);
-            }
-        }
+        setReceiveAmount(value);
     };
 
-    const Swap = async () => {};
-
-    const Deposit = async () => {
-        network_val = network_val ? network_val : 1;
+    const Swap = async () => {
         if (phrase) {
+            console.log(sendAsset, receiveAsset, "sendreceive");
+            network_val = network_val ? network_val : 1;
             const network =
                 network_val === 1
                     ? Network.Testnet
                     : network_val === 2
                     ? Network.Mainnet
                     : Network.Stagenet;
-            console.log(network, "network");
-            if (choose === 1) {
-                if (chain === "BTC") {
-                    deposit_btc(phrase, fAmount, network);
-                } else if (chain === "BCH") {
-                    deposit_bch(phrase, fAmount, network);
-                } else if (chain === "LTC") {
-                    deposit_ltc(phrase, fAmount, network);
-                } else if (chain === "BNB") {
-                    deposit_bnb(phrase, fAmount, network);
-                } else if (chain === "ETH") {
-                    deposit_eth(phrase, fAmount, network);
-                } else if (chain === "BUSD") {
-                    deposit_busd(phrase, fAmount, network);
-                } else if (chain === "USDT") {
-                    deposit_usdt(fAmount);
+            const chainIds = {
+                [Network.Mainnet]: "thorchain-mainnet-v1",
+                [Network.Stagenet]: "thorchain-stagenet-v1",
+                [Network.Testnet]: "thorchain-testnet-v2",
+            };
+            const AssetBUSD = {
+                chain: "BNB",
+                symbol: "BUSD-74E",
+                synth: false,
+                ticker: "BUSD",
+            };
+            const AssetUSDT = {
+                chain: "ETH",
+                symbol: "USDT-0XA3910454BF2CB59B8B3A401589A3BACC5CA42306",
+                synth: false,
+                ticker: "USDT",
+            };
+            //thorchain
+            const thorclient = new thorchainClient({
+                network,
+                phrase,
+                chainIds,
+            });
+            const thoraddress = thorclient.getAddress();
+            //binance
+            const bnbclient = new binanceClient({ network, phrase });
+            const bnbaddress = bnbclient.getAddress();
+            //bitcoin cash
+            const bchclient = new bitcoinCashClient({ network, phrase });
+            const bchaddress = bchclient.getAddress();
+            //bitcoin
+            const bitcoinclient = new bitcoinClient({ network, phrase });
+            const bitcoinaddress = bitcoinclient.getAddress();
+            //ethereum
+            const ethclient = new ethereumClient({ network, phrase });
+            const ethaddress = ethclient.getAddress();
+
+            //memo(when receive token is thorchain token)
+            let memo = `=:${AssetRuneNative.chain}.${AssetRuneNative.symbol}:${thoraddress}`;
+            if (receiveAsset === "BNB") {
+                memo = `=:${AssetBNB.chain}.${AssetBNB.symbol}:${bnbaddress}`;
+            } else if (receiveAsset === "BCH") {
+                memo = `=:${AssetBCH.chain}.${AssetBCH.symbol}:${bchaddress}`;
+            } else if (receiveAsset === "BTC") {
+                memo = `=:${AssetBTC.chain}.${AssetBTC.symbol}:${bitcoinaddress}`;
+            } else if (receiveAsset === "ETH") {
+                memo = `=:${AssetETH.chain}.${AssetETH.symbol}:${ethaddress}`;
+            } else if (receiveAsset === "BUSD") {
+                memo = `=:${AssetBUSD.chain}.${AssetBUSD.symbol}:${bnbaddress}`;
+            } else if (receiveAmount === "USDT") {
+                memo = `=:${AssetUSDT.chain}.${AssetUSDT.symbol}:${ethaddress}`;
+            }
+            //contract address and tx fee
+            const BCH_contract_address =
+                "qz5fma7jqm4amplztqc63zd98xatly6aaqz0uk520w";
+            const BCH_fee = +3;
+
+            const BTC_contract_address =
+                "bc1qg4lx5fhl2ampzp4na8tp5ju0am2dqznn28hxhu";
+            const BTC_fee = +11250;
+
+            const ETH_contract_address =
+                "0x1f42326414e8f6a37026890d1992fe4bd28ede81";
+            const ETH_fee = +120;
+
+            const BNB_contract_address =
+                "tbnb14zwl05sxa0wc0cjcxx5gnffeh2lexh0gamy9ca";
+            const BNB_fee = +11250;
+
+            console.log(memo, "memo");
+            //transaction
+            if (sendAsset === "BNB") {
+                try {
+                    const txID = bnbclient.transfer({
+                        asset: AssetBNB,
+                        amount: assetToBase(
+                            assetAmount(sendAmount, ETH_DECIMAL)
+                        ),
+                        recipient: BNB_contract_address,
+                        memo,
+                        feeRate: BNB_fee,
+                    });
+                    console.log(txID, "txID");
+                    alert("Transaction is successed!");
+                } catch (e) {
+                    alert("Someting error!");
+                    console.log(e);
                 }
-            } else if (choose === 2) {
-                if (multichain === "BTCRUNE") {
-                    deposit_btc(phrase, fAmount, network);
-                    deposit_rune(phrase, sAmount, network);
-                } else if (multichain === "BCHRUNE") {
-                    deposit_bch(phrase, fAmount, network);
-                    deposit_rune(phrase, sAmount, network);
-                } else if (multichain === "BNBRUNE") {
-                    deposit_bnb(phrase, fAmount, network);
-                    deposit_rune(phrase, sAmount, network);
-                } else if (multichain === "LTCRUNE") {
-                    deposit_ltc(phrase, fAmount, network);
-                    deposit_rune(phrase, sAmount, network);
-                } else if (multichain === "ETHRUNE") {
-                    deposit_eth(phrase, fAmount, network);
-                    deposit_rune(phrase, sAmount, network);
-                } else if (multichain === "BUSDRUNE") {
-                    deposit_busd(phrase, fAmount, network);
-                    deposit_rune(phrase, sAmount, network);
-                } else if (multichain === "USDTRUNE") {
-                    deposit_usdt(phrase, fAmount, network);
-                    deposit_rune(phrase, sAmount, network);
+            } else if (sendAsset === "BTC") {
+                try {
+                    const txID = await bitcoinclient.transfer({
+                        asset: AssetBTC,
+                        amount: assetToBase(assetAmount(sendAmount, 8)),
+                        recipient: BTC_contract_address,
+                        memo,
+                        feeRate: BTC_fee,
+                    });
+                    console.log(txID, "txID");
+                    alert("Transaction is successed!");
+                } catch (e) {
+                    alert("Someting error!");
+                    console.log(e);
                 }
-            } else {
-                deposit_rune(phrase, sAmount, network, chain);
+            } else if (sendAsset === "BCH") {
+                try {
+                    const txID = await bchclient.transfer({
+                        asset: AssetBCH,
+                        amount: assetToBase(
+                            assetAmount(sendAmount, BCH_DECIMAL)
+                        ),
+                        recipient: BCH_contract_address,
+                        memo,
+                        feeRate: BCH_fee,
+                    });
+                    console.log(txID, "txID");
+                    alert("Transaction is successed!");
+                } catch (e) {
+                    alert("Someting error!");
+                    console.log(e);
+                }
+            } else if (sendAsset === "ETH") {
+                try {
+                    const txID = await ethclient.transfer({
+                        asset: AssetETH,
+                        amount: assetToBase(
+                            assetAmount(sendAmount, ETH_DECIMAL)
+                        ),
+                        recipient: ETH_contract_address,
+                        memo,
+                        feeRate: ETH_fee,
+                    });
+                    console.log(txID, "txID");
+                    alert("Transaction is successed!");
+                } catch (e) {
+                    alert("Someting error!");
+                    console.log(e);
+                }
+            } else if (sendAsset === "BUSD") {
+                try {
+                    const txID = await bnbclient.transfer({
+                        asset: AssetBUSD,
+                        amount: assetToBase(
+                            assetAmount(sendAmount, ETH_DECIMAL)
+                        ),
+                        recipient: BNB_contract_address,
+                        memo,
+                        feeRate: BNB_fee,
+                    });
+                    console.log(txID, "txID");
+                    alert("Transaction is successed!");
+                } catch (e) {
+                    alert("Someting error!");
+                    console.log(e);
+                }
+            } else if (sendAsset === "USDT") {
+                try {
+                    const txID = await ethclient.transfer({
+                        asset: AssetUSDT,
+                        amount: assetToBase(
+                            assetAmount(sendAmount, ETH_DECIMAL)
+                        ),
+                        recipient: ETH_contract_address,
+                        memo,
+                        feeRate: ETH_fee,
+                    });
+                    console.log(txID, "txID");
+                    alert("Transaction is successed!");
+                } catch (e) {
+                    alert("Someting error!");
+                    console.log(e);
+                }
+            } else if (sendAsset === "RUNE") {
+                try {
+                    const txID = await thorclient.deposit({
+                        amount: assetToBase(assetAmount(sendAmount, 8)),
+                        memo,
+                    });
+                    console.log(txID, "txID");
+                    alert("Transaction is successed!");
+                } catch (e) {
+                    alert("Someting error!");
+                    console.log(e, "error");
+                }
             }
         } else {
-            alert("Plz connect wallet!");
+            alert("Please connect your wallet!");
         }
     };
 
@@ -156,13 +288,15 @@ const Content = () => {
         <>
             <Box id="content" className={classes.Content}>
                 <Box className="content-box">
-                    <Grid container className="token">
-                        <Grid>{`SEND ${fAmount ? fAmount : 0}`}</Grid>
+                    <Grid container className="sendtoken">
+                        <Grid>{`SEND ${
+                            sendAmount ? sendAmount : 0
+                        } ${sendAsset}`}</Grid>
                         <Grid container>
                             <Grid item xs={6} xl={6}>
                                 <input
                                     type="number"
-                                    value={fAmount ? fAmount : ""}
+                                    value={sendAmount ? sendAmount : ""}
                                     onChange={(e) =>
                                         onChangeFirst(e.target.value)
                                     }
@@ -173,22 +307,32 @@ const Content = () => {
                                 <Button variant="outlined">MAX</Button>
                             </Grid>
                             <Grid item xs={3} xl={3}>
-                                <Button variant="outlined">{chain}</Button>
+                                <Button
+                                    variant="outlined"
+                                    onClick={() => onClickAssetMdl(1)}
+                                >
+                                    {sendAsset}
+                                </Button>
                             </Grid>
                         </Grid>
                     </Grid>
                     <Grid container className="exchange">
-                        <IconButton size="large">
+                        <IconButton
+                            onClick={() => onClickExchange()}
+                            size="large"
+                        >
                             <SwapVertIcon />
                         </IconButton>
                     </Grid>
-                    <Grid container className="token">
-                        <Grid>{`RECEIVE ${sAmount ? sAmount : 0}`}</Grid>
+                    <Grid container className="receivetoken">
+                        <Grid>{`RECEIVE ${
+                            receiveAmount ? receiveAmount : 0
+                        } ${receiveAsset}`}</Grid>
                         <Grid container>
                             <Grid item xs={6} xl={6}>
                                 <input
                                     type="number"
-                                    value={sAmount ? sAmount : ""}
+                                    value={receiveAmount ? receiveAmount : ""}
                                     onChange={(e) =>
                                         onChangeSecond(e.target.value)
                                     }
@@ -199,14 +343,20 @@ const Content = () => {
                                 <Button variant="outlined">MAX</Button>
                             </Grid>
                             <Grid item xs={3} xl={3}>
-                                <Button variant="outlined">RUNE</Button>
+                                <Button
+                                    variant="outlined"
+                                    onClick={() => onClickAssetMdl(2)}
+                                >
+                                    {receiveAsset}
+                                </Button>
                             </Grid>
                         </Grid>
                     </Grid>
                     <Grid container className="action">
                         <Button
                             className="actionBtn"
-                            variant="outlined"
+                            variant="contained"
+                            size="large"
                             onClick={() => Swap()}
                         >
                             SWAP
@@ -216,8 +366,8 @@ const Content = () => {
             </Box>
 
             <Dialog
-                onClose={handleClose}
-                open={isOpen}
+                onClose={onCloseAssetModal}
+                open={isOpenAssetMdl}
                 maxWidth="xs"
                 className={classes.cWallet}
                 classes={{
@@ -228,7 +378,7 @@ const Content = () => {
                     <DialogTitle color="black">SELECT ASSET</DialogTitle>
                     <IconButton
                         onClick={() => {
-                            setIsOpen(false);
+                            setIsOpenAssetMdl(false);
                         }}
                     >
                         <CloseIcon />
@@ -239,7 +389,7 @@ const Content = () => {
                         {Assets.map((item, index) => (
                             <ListItem
                                 key={index}
-                                onClick={() => onItemClick(item)}
+                                onClick={() => onAssetClick(item)}
                                 className="item activating-item"
                             >
                                 <ListItemIcon className="symbol">
@@ -251,7 +401,7 @@ const Content = () => {
                                 <ListItemText
                                     className="activating-description"
                                     primary={item ? item.title : ""}
-                                    secondary={item ? item.network : ""}
+                                    secondary={item ? item.type : ""}
                                 />
                             </ListItem>
                         ))}
