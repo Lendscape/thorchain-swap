@@ -70,13 +70,13 @@ const Cwallet = ({ isOpen, setIsOpen }) => {
     };
 
     const onWalletConnect = () => {
-        console.log(multichains, "multichain");
         for (let i = 0; i < multichains.length; i++) {
             if (multichains[i].choose === true) {
                 const obj = xfiObject[multichains[i].network];
                 request(multichains[i].title, obj, "request_accounts", []);
             }
         }
+        setIsOpen(false);
     };
 
     const onSelectChain = (index) => {

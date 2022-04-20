@@ -50,8 +50,14 @@ const Content = () => {
     const [sendAsset, setSendAsset] = useState("BNB");
     const [receiveAsset, setReceiveAsset] = useState("RUNE");
     const [choose, setChoose] = useState(1);
+    const thoraddress = useSelector((store) => store.provider.thoraddress);
+    const bnbaddress = useSelector((store) => store.provider.bnbaddress);
+    const bchaddress = useSelector((store) => store.provider.bchaddress);
+    const bitcoinaddress = useSelector((store) => store.provider.btcaddress);
     const phrase = useSelector((store) => store.provider.phrase);
     let network_val = useSelector((store) => store.provider.network);
+    const xfiObject = window.xfi;
+
     const onAssetClick = (item) => {
         if (choose === 1) {
             setSendAsset(item.title);
@@ -276,19 +282,6 @@ const Content = () => {
                 }
             }
         } else if (window.xfi) {
-            const xfiObject = window.xfi;
-            const thoraddress = useSelector(
-                (store) => store.provider.thoraddress
-            );
-            const bnbaddress = useSelector(
-                (store) => store.provider.bnbaddress
-            );
-            const bchaddress = useSelector(
-                (store) => store.provider.bchaddress
-            );
-            const bitcoinaddress = useSelector(
-                (store) => store.provider.btcaddress
-            );
             //memo(when receive token is thorchain token)
             let memo = `=:${AssetRuneNative.chain}.${AssetRuneNative.symbol}:${thoraddress}`;
             if (receiveAsset === "BNB") {
@@ -300,27 +293,43 @@ const Content = () => {
             } else if (receiveAsset === "BUSD") {
                 memo = `=:${AssetBUSD.chain}.${AssetBUSD.symbol}:${bnbaddress}`;
             }
+            console.log(
+                xfiObject,
+                bnbaddress,
+                sendAmount,
+                memo,
+                ETH_DECIMAL,
+                "xfObject"
+            );
             if (sendAsset === "BNB") {
-                xfiObject.binance.request(
-                    {
-                        method: "transfer",
-                        params: [
-                            {
-                                asset: AssetBNB,
-                                from: bnbaddress,
-                                recipient: BNB_contract_address,
-                                amount: assetToBase(
-                                    assetAmount(sendAmount, ETH_DECIMAL)
-                                ),
-                                memo,
-                            },
-                        ],
-                    },
-                    (error, result) => {
-                        console.debug(error, result);
-                        this.lastResult = { error, result };
-                    }
-                );
+                try {
+                    console.log(
+                        assetToBase(assetAmount(Number(sendAmount), 8)),
+                        "memo"
+                    );
+                    window.xfi.binance.request(
+                        {
+                            method: "transfer",
+                            params: [
+                                {
+                                    from: bnbaddress,
+                                    recipient: BNB_contract_address,
+                                    amount: {
+                                        amount: Number(sendAmount),
+                                        decimals: ETH_DECIMAL,
+                                    },
+                                    memo,
+                                },
+                            ],
+                        },
+                        (error, result) => {
+                            const lastResult = { error, result };
+                            console.log(lastResult, "lastResult");
+                        }
+                    );
+                } catch (e) {
+                    console.log(e, "error");
+                }
             } else if (sendAsset === "BTC") {
                 xfiObject.bitcoin.request(
                     {
@@ -330,14 +339,18 @@ const Content = () => {
                                 from: bitcoinaddress,
                                 recipient: BTC_contract_address,
                                 feeRate: BTC_fee,
-                                amount: assetToBase(assetAmount(sendAmount, 8)),
+                                amount: {
+                                    amount: Number(sendAmount),
+                                    decimals: 8,
+                                },
                                 memo,
                             },
                         ],
                     },
                     (error, result) => {
                         console.debug(error, result);
-                        this.lastResult = { error, result };
+                        const lastResult = { error, result };
+                        console.log(lastResult, "result");
                     }
                 );
             } else if (sendAsset === "BCH") {
@@ -349,16 +362,17 @@ const Content = () => {
                                 from: bchaddress,
                                 recipient: BCH_contract_address,
                                 feeRate: BCH_fee,
-                                amount: assetToBase(
-                                    assetAmount(sendAmount, BCH_DECIMAL)
-                                ),
+                                amount: {
+                                    amount: Number(sendAmount),
+                                    decimals: BCH_DECIMAL,
+                                },
                                 memo,
                             },
                         ],
                     },
                     (error, result) => {
-                        console.debug(error, result);
-                        this.lastResult = { error, result };
+                        const lastResult = { error, result };
+                        console.log(lastResult, "result");
                     }
                 );
             } else if (sendAsset === "BUSD") {
@@ -367,40 +381,53 @@ const Content = () => {
                         method: "transfer",
                         params: [
                             {
-                                asset: AssetBNB,
+                                asset: AssetBUSD,
                                 from: bnbaddress,
                                 recipient: BNB_contract_address,
-                                amount: assetToBase(
-                                    assetAmount(sendAmount, ETH_DECIMAL)
-                                ),
+                                amount: {
+                                    amount: Number(sendAmount),
+                                    decimals: 18,
+                                },
                                 memo,
                             },
                         ],
                     },
                     (error, result) => {
                         console.debug(error, result);
-                        this.lastResult = { error, result };
+                        const lastResult = { error, result };
+                        console.log(lastResult, "result");
                     }
                 );
             } else if (sendAsset === "RUNE") {
-                this.xfiObject[this.selectedChain.chain].request(
-                    {
-                        method: "transfer",
-                        params: [
-                            {
-                                asset: AssetRuneNative,
-                                from: thoraddress,
-                                // recipient,
-                                amount: assetToBase(assetAmount(sendAmount, 8)),
-                                memo,
-                            },
-                        ],
-                    },
-                    (error, result) => {
-                        console.debug(error, result);
-                        this.lastResult = { error, result };
-                    }
-                );
+                console.log(thoraddress, "thor");
+                console.log(sendAmount, "thor");
+                console.log(memo, "thor");
+                try {
+                    xfiObject.thorchain.request(
+                        {
+                            method: "transfer",
+                            params: [
+                                {
+                                    asset: AssetRuneNative,
+                                    from: thoraddress,
+                                    recipient:
+                                        "tthor1g98cy3n9mmjrpn0sxmn63lztelera37nrytwp2",
+                                    amount: {
+                                        amount: Number(sendAmount),
+                                        decimals: 8,
+                                    },
+                                    memo,
+                                },
+                            ],
+                        },
+                        (error, result) => {
+                            const lastResult = { error, result };
+                            console.log(lastResult, "result");
+                        }
+                    );
+                } catch (e) {
+                    console.log(e);
+                }
             }
         } else {
             alert("Please connect your wallet!");

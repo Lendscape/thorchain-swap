@@ -4,7 +4,7 @@ import useStyles from "../assets/constants/styles";
 import { Client as thorchainClient } from "@xchainjs/xchain-thorchain";
 import { Network } from "@xchainjs/xchain-client";
 import { CopyToClipboard } from "react-copy-to-clipboard";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 
 import Button from "@mui/material/Button";
 import IconButton from "@mui/material/IconButton";
@@ -23,7 +23,8 @@ const Header = ({ phrase, setPhrase, setChainNetwork }) => {
     const [isOpenDialog, setIsOpenDialog] = useState(false);
     const [thorAddress, setThorAddress] = useState("");
     const [network, setNetwork] = useState(1);
-
+    const thoraddress_xfi = useSelector((store) => store.provider.thoraddress);
+    console.log(thoraddress_xfi, "thoraddress_xfi");
     //network change
     const onChangeNetwork = (value) => {
         console.log(value, "networkval");
@@ -80,6 +81,19 @@ const Header = ({ phrase, setPhrase, setChainNetwork }) => {
                             <IconButton size="small">
                                 {thorAddress.substring(0, 3)} ...{" "}
                                 {thorAddress.substring(thorAddress.length - 3)}
+                            </IconButton>
+                        </Tooltip>
+                    </CopyToClipboard>
+                </>
+            ) : window.xfi && thoraddress_xfi ? (
+                <>
+                    <CopyToClipboard text={thoraddress_xfi}>
+                        <Tooltip arrow title="Copy address">
+                            <IconButton size="small">
+                                {thoraddress_xfi.substring(0, 3)} ...{" "}
+                                {thoraddress_xfi.substring(
+                                    thoraddress_xfi.length - 3
+                                )}
                             </IconButton>
                         </Tooltip>
                     </CopyToClipboard>
