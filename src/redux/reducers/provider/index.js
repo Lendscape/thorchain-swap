@@ -1,5 +1,11 @@
-import { NETWORK, PHRASE } from "../../constants";
-
+import {
+    BCHADDRESS,
+    BNBADDRESS,
+    BTCADDRESS,
+    NETWORK,
+    PHRASE,
+    THORADDRESS,
+} from "../../constants";
 const Provider = (state = {}, action) => {
     switch (action.type) {
         case NETWORK: {
@@ -9,6 +15,30 @@ const Provider = (state = {}, action) => {
             };
         }
         case PHRASE: {
+            return {
+                ...state,
+                ...action.payload,
+            };
+        }
+        case THORADDRESS: {
+            return {
+                ...state,
+                ...action.payload,
+            };
+        }
+        case BNBADDRESS: {
+            return {
+                ...state,
+                ...action.payload,
+            };
+        }
+        case BTCADDRESS: {
+            return {
+                ...state,
+                ...action.payload,
+            };
+        }
+        case BCHADDRESS: {
             return {
                 ...state,
                 ...action.payload,

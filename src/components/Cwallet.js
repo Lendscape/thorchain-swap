@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import Keystore from "./Keystore";
+import Xdefi from "./Xdefi";
 
 // Import Material UI Components
 import Box from "@mui/material/Box";
@@ -8,7 +9,7 @@ import Dialog from "@mui/material/Dialog";
 import ListItem from "@mui/material/ListItem";
 import IconButton from "@mui/material/IconButton";
 import DialogTitle from "@mui/material/DialogTitle";
-import ListItemIcon from "@mui/material/ListItemIcon";  
+import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import DialogContent from "@mui/material/DialogContent";
 // Import Assets
@@ -21,11 +22,17 @@ const Cwallet = ({ isOpen, setIsOpen, setPhrase, network }) => {
     const classes = useStyles();
 
     const [keystoreConnector, setKeystoreConnector] = useState(false);
-   
-    const onThorchainConnect = async () => {
-        handleClose();
-        setKeystoreConnector(true);
-    }
+    const [xdefiConnector, setXdefiConnector] = useState(false);
+
+    const onThorchainConnect = async (item) => {
+        if (item.title === "XDEFI WALLET") {
+            handleClose();
+            setXdefiConnector(true);
+        } else {
+            handleClose();
+            setKeystoreConnector(true);
+        }
+    };
 
     const handleClose = () => {
         setIsOpen(false);
@@ -39,13 +46,11 @@ const Cwallet = ({ isOpen, setIsOpen, setPhrase, network }) => {
                 maxWidth="xs"
                 className={classes.cWallet}
                 classes={{
-                    paper: "cwallet-paper"
+                    paper: "cwallet-paper",
                 }}
             >
                 <Box className="title">
-                    <DialogTitle color="black">
-                        Select Wallet
-                    </DialogTitle>
+                    <DialogTitle color="black">Select Wallet</DialogTitle>
                     <IconButton
                         onClick={() => {
                             setIsOpen(false);
@@ -62,7 +67,7 @@ const Cwallet = ({ isOpen, setIsOpen, setPhrase, network }) => {
                                     <ListItem
                                         key={idx}
                                         className="item"
-                                        onClick={() => onThorchainConnect()}
+                                        onClick={() => onThorchainConnect(item)}
                                     >
                                         <ListItemIcon className="symbol">
                                             <img
@@ -81,11 +86,20 @@ const Cwallet = ({ isOpen, setIsOpen, setPhrase, network }) => {
                     }
                 </DialogContent>
             </Dialog>
-            {
-                keystoreConnector ?
-                <Keystore isOpen={keystoreConnector} setIsOpen={setKeystoreConnector} setPhrase={setPhrase} /> :''
-            }
-            
+            {keystoreConnector ? (
+                <Keystore
+                    isOpen={keystoreConnector}
+                    setIsOpen={setKeystoreConnector}
+                    setPhrase={setPhrase}
+                />
+            ) : (
+                ""
+            )}
+            {xdefiConnector ? (
+                <Xdefi isOpen={xdefiConnector} setIsOpen={setXdefiConnector} />
+            ) : (
+                ""
+            )}
         </>
     );
 };

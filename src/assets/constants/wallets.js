@@ -1,4 +1,5 @@
 import KeystoreWallet from "../img/wallets/keystore-wallet.svg";
+import XdefiWallet from "../img/wallets/xdefi-wallet.png";
 
 //chain logo
 import ThorChain from "../img/chains/thorchain.svg";
@@ -16,6 +17,12 @@ const Wallets = [
         title: "KEYSTORE CONNECT",
         description: "Connect to your keystore Wallet",
         logo: KeystoreWallet,
+        connector: "thorchain",
+    },
+    {
+        title: "XDEFI WALLET",
+        description: "Connect to your Xdefi Wallet",
+        logo: XdefiWallet,
         connector: "thorchain",
     },
 ];
@@ -39,12 +46,12 @@ const Chains = [
         choose: true,
         network: "binance",
     },
-    {
-        title: "ETH",
-        logo: EthChain,
-        choose: true,
-        network: "ethereum",
-    },
+    // {
+    //     title: "ETH",
+    //     logo: EthChain,
+    //     choose: true,
+    //     network: "ethereum",
+    // },
     {
         title: "LTC",
         logo: LtcChain,

@@ -52,7 +52,6 @@ const Content = () => {
     const [choose, setChoose] = useState(1);
     const phrase = useSelector((store) => store.provider.phrase);
     let network_val = useSelector((store) => store.provider.network);
-
     const onAssetClick = (item) => {
         if (choose === 1) {
             setSendAsset(item.title);
@@ -86,32 +85,47 @@ const Content = () => {
     };
 
     const Swap = async () => {
+        network_val = network_val ? network_val : 1;
+        const network =
+            network_val === 1
+                ? Network.Testnet
+                : network_val === 2
+                ? Network.Mainnet
+                : Network.Stagenet;
+        const chainIds = {
+            [Network.Mainnet]: "thorchain-mainnet-v1",
+            [Network.Stagenet]: "thorchain-stagenet-v1",
+            [Network.Testnet]: "thorchain-testnet-v2",
+        };
+        const AssetBUSD = {
+            chain: "BNB",
+            symbol: "BUSD-74E",
+            synth: false,
+            ticker: "BUSD",
+        };
+        const AssetUSDT = {
+            chain: "ETH",
+            symbol: "USDT-0XA3910454BF2CB59B8B3A401589A3BACC5CA42306",
+            synth: false,
+            ticker: "USDT",
+        };
+        //contract address and tx fee
+        const BCH_contract_address =
+            "qz5fma7jqm4amplztqc63zd98xatly6aaqz0uk520w";
+        const BCH_fee = +3;
+
+        const BTC_contract_address =
+            "bc1qg4lx5fhl2ampzp4na8tp5ju0am2dqznn28hxhu";
+        const BTC_fee = +11250;
+
+        const ETH_contract_address =
+            "0x1f42326414e8f6a37026890d1992fe4bd28ede81";
+        const ETH_fee = +120;
+
+        const BNB_contract_address =
+            "tbnb14zwl05sxa0wc0cjcxx5gnffeh2lexh0gamy9ca";
+        const BNB_fee = +11250;
         if (phrase) {
-            console.log(sendAsset, receiveAsset, "sendreceive");
-            network_val = network_val ? network_val : 1;
-            const network =
-                network_val === 1
-                    ? Network.Testnet
-                    : network_val === 2
-                    ? Network.Mainnet
-                    : Network.Stagenet;
-            const chainIds = {
-                [Network.Mainnet]: "thorchain-mainnet-v1",
-                [Network.Stagenet]: "thorchain-stagenet-v1",
-                [Network.Testnet]: "thorchain-testnet-v2",
-            };
-            const AssetBUSD = {
-                chain: "BNB",
-                symbol: "BUSD-74E",
-                synth: false,
-                ticker: "BUSD",
-            };
-            const AssetUSDT = {
-                chain: "ETH",
-                symbol: "USDT-0XA3910454BF2CB59B8B3A401589A3BACC5CA42306",
-                synth: false,
-                ticker: "USDT",
-            };
             //thorchain
             const thorclient = new thorchainClient({
                 network,
@@ -147,25 +161,7 @@ const Content = () => {
             } else if (receiveAmount === "USDT") {
                 memo = `=:${AssetUSDT.chain}.${AssetUSDT.symbol}:${ethaddress}`;
             }
-            //contract address and tx fee
-            const BCH_contract_address =
-                "qz5fma7jqm4amplztqc63zd98xatly6aaqz0uk520w";
-            const BCH_fee = +3;
 
-            const BTC_contract_address =
-                "bc1qg4lx5fhl2ampzp4na8tp5ju0am2dqznn28hxhu";
-            const BTC_fee = +11250;
-
-            const ETH_contract_address =
-                "0x1f42326414e8f6a37026890d1992fe4bd28ede81";
-            const ETH_fee = +120;
-
-            const BNB_contract_address =
-                "tbnb14zwl05sxa0wc0cjcxx5gnffeh2lexh0gamy9ca";
-            const BNB_fee = +11250;
-
-            console.log(memo, "memo");
-            //transaction
             if (sendAsset === "BNB") {
                 try {
                     const txID = bnbclient.transfer({
@@ -278,6 +274,133 @@ const Content = () => {
                     alert("Someting error!");
                     console.log(e, "error");
                 }
+            }
+        } else if (window.xfi) {
+            const xfiObject = window.xfi;
+            const thoraddress = useSelector(
+                (store) => store.provider.thoraddress
+            );
+            const bnbaddress = useSelector(
+                (store) => store.provider.bnbaddress
+            );
+            const bchaddress = useSelector(
+                (store) => store.provider.bchaddress
+            );
+            const bitcoinaddress = useSelector(
+                (store) => store.provider.btcaddress
+            );
+            //memo(when receive token is thorchain token)
+            let memo = `=:${AssetRuneNative.chain}.${AssetRuneNative.symbol}:${thoraddress}`;
+            if (receiveAsset === "BNB") {
+                memo = `=:${AssetBNB.chain}.${AssetBNB.symbol}:${bnbaddress}`;
+            } else if (receiveAsset === "BCH") {
+                memo = `=:${AssetBCH.chain}.${AssetBCH.symbol}:${bchaddress}`;
+            } else if (receiveAsset === "BTC") {
+                memo = `=:${AssetBTC.chain}.${AssetBTC.symbol}:${bitcoinaddress}`;
+            } else if (receiveAsset === "BUSD") {
+                memo = `=:${AssetBUSD.chain}.${AssetBUSD.symbol}:${bnbaddress}`;
+            }
+            if (sendAsset === "BNB") {
+                xfiObject.binance.request(
+                    {
+                        method: "transfer",
+                        params: [
+                            {
+                                asset: AssetBNB,
+                                from: bnbaddress,
+                                recipient: BNB_contract_address,
+                                amount: assetToBase(
+                                    assetAmount(sendAmount, ETH_DECIMAL)
+                                ),
+                                memo,
+                            },
+                        ],
+                    },
+                    (error, result) => {
+                        console.debug(error, result);
+                        this.lastResult = { error, result };
+                    }
+                );
+            } else if (sendAsset === "BTC") {
+                xfiObject.bitcoin.request(
+                    {
+                        method: "transfer",
+                        params: [
+                            {
+                                from: bitcoinaddress,
+                                recipient: BTC_contract_address,
+                                feeRate: BTC_fee,
+                                amount: assetToBase(assetAmount(sendAmount, 8)),
+                                memo,
+                            },
+                        ],
+                    },
+                    (error, result) => {
+                        console.debug(error, result);
+                        this.lastResult = { error, result };
+                    }
+                );
+            } else if (sendAsset === "BCH") {
+                xfiObject.bitcoincash.request(
+                    {
+                        method: "transfer",
+                        params: [
+                            {
+                                from: bchaddress,
+                                recipient: BCH_contract_address,
+                                feeRate: BCH_fee,
+                                amount: assetToBase(
+                                    assetAmount(sendAmount, BCH_DECIMAL)
+                                ),
+                                memo,
+                            },
+                        ],
+                    },
+                    (error, result) => {
+                        console.debug(error, result);
+                        this.lastResult = { error, result };
+                    }
+                );
+            } else if (sendAsset === "BUSD") {
+                xfiObject.binance.request(
+                    {
+                        method: "transfer",
+                        params: [
+                            {
+                                asset: AssetBNB,
+                                from: bnbaddress,
+                                recipient: BNB_contract_address,
+                                amount: assetToBase(
+                                    assetAmount(sendAmount, ETH_DECIMAL)
+                                ),
+                                memo,
+                            },
+                        ],
+                    },
+                    (error, result) => {
+                        console.debug(error, result);
+                        this.lastResult = { error, result };
+                    }
+                );
+            } else if (sendAsset === "RUNE") {
+                this.xfiObject[this.selectedChain.chain].request(
+                    {
+                        method: "transfer",
+                        params: [
+                            {
+                                asset: AssetRuneNative,
+                                from: thoraddress,
+                                // recipient,
+                                amount: assetToBase(assetAmount(sendAmount, 8)),
+                                memo,
+                            },
+                        ],
+                    },
+                    (error, result) => {
+                        console.debug(error, result);
+                        this.lastResult = { error, result };
+                    }
+                );
             }
         } else {
             alert("Please connect your wallet!");
