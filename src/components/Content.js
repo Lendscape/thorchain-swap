@@ -41,6 +41,7 @@ import SwapVertIcon from "@mui/icons-material/SwapVert";
 
 import { Assets } from "../assets/constants/wallets";
 import useStyles from "../assets/constants/styles";
+import axios from "axios";
 
 const Content = () => {
     const classes = useStyles();
@@ -50,10 +51,20 @@ const Content = () => {
     const [sendAsset, setSendAsset] = useState("BNB");
     const [receiveAsset, setReceiveAsset] = useState("RUNE");
     const [choose, setChoose] = useState(1);
-    const thoraddress = useSelector((store) => store.provider.thoraddress);
-    const bnbaddress = useSelector((store) => store.provider.bnbaddress);
-    const bchaddress = useSelector((store) => store.provider.bchaddress);
-    const bitcoinaddress = useSelector((store) => store.provider.btcaddress);
+    const thoraddress_xfi = useSelector((store) => store.provider.thoraddress);
+    const bnbaddress_xfi = useSelector((store) => store.provider.bnbaddress);
+    const bchaddress_xfi = useSelector((store) => store.provider.bchaddress);
+    const bitcoinaddress_xfi = useSelector(
+        (store) => store.provider.btcaddress
+    );
+    const [bchPrice, setBchPrice] = useState([0, 0]);
+    const [usdtPrice, setUsdtPrice] = useState([0, 0]);
+    const [bnbPrice, setBnbPrice] = useState([0, 0]);
+    const [btcPrice, setBtcPrice] = useState([0, 0]);
+    const [busdPrice, setBusdPrice] = useState([0, 0]);
+    const [ethPrice, setEthPrice] = useState([0, 0]);
+    const [runePrice, setRunePrice] = useState(4.7);
+    const [priceData, setPriceData] = useState({});
     const phrase = useSelector((store) => store.provider.phrase);
     let network_val = useSelector((store) => store.provider.network);
     const xfiObject = window.xfi;
@@ -66,6 +77,79 @@ const Content = () => {
         }
         setIsOpenAssetMdl(false);
     };
+
+    const onGetCoinPrice = async () => {
+        let data = await axios.get(
+            `https://testnet.midgard.thorchain.info/v2/pools`
+        );
+        if (data.data) {
+            let pdata = {};
+            for (let i = 0; i < data.data.length; i++) {
+                if (data.data[i].asset === "BCH.BCH") {
+                    setBchPrice([
+                        data.data[i].assetPrice,
+                        data.data[i].assetPriceUSD,
+                    ]);
+                    pdata.BCH = [
+                        data.data[i].assetPrice,
+                        data.data[i].assetPriceUSD,
+                    ];
+                } else if (
+                    data.data[i].asset ===
+                    "ETH.USDT-0XA3910454BF2CB59B8B3A401589A3BACC5CA42306"
+                ) {
+                    setUsdtPrice([
+                        data.data[i].assetPrice,
+                        data.data[i].assetPriceUSD,
+                    ]);
+                    pdata.USDT = [
+                        data.data[i].assetPrice,
+                        data.data[i].assetPriceUSD,
+                    ];
+                } else if (data.data[i].asset === "BNB.BNB") {
+                    setBnbPrice([
+                        data.data[i].assetPrice,
+                        data.data[i].assetPriceUSD,
+                    ]);
+                    pdata.BNB = [
+                        data.data[i].assetPrice,
+                        data.data[i].assetPriceUSD,
+                    ];
+                } else if (data.data[i].asset === "BNB.BUSD-74E") {
+                    setBusdPrice([
+                        data.data[i].assetPrice,
+                        data.data[i].assetPriceUSD,
+                    ]);
+                    pdata.BUSD = [
+                        data.data[i].assetPrice,
+                        data.data[i].assetPriceUSD,
+                    ];
+                } else if (data.data[i].asset === "BTC.BTC") {
+                    setBtcPrice([
+                        data.data[i].assetPrice,
+                        data.data[i].assetPriceUSD,
+                    ]);
+                    pdata.BTC = [
+                        data.data[i].assetPrice,
+                        data.data[i].assetPriceUSD,
+                    ];
+                } else if (data.data[i].asset === "ETH.ETH") {
+                    setEthPrice([
+                        data.data[i].assetPrice,
+                        data.data[i].assetPriceUSD,
+                    ]);
+                    pdata.ETH = [
+                        data.data[i].assetPrice,
+                        data.data[i].assetPriceUSD,
+                    ];
+                }
+            }
+            pdata.RUNE = [1, 4.7];
+            console.log(pdata, "pricedata");
+            setPriceData(pdata);
+        }
+    };
+
     const onCloseAssetModal = () => {
         setIsOpenAssetMdl(false);
     };
@@ -83,6 +167,12 @@ const Content = () => {
     };
 
     const onChangeFirst = (value) => {
+        let senddata = priceData[sendAsset];
+        let recvdata = priceData[receiveAsset];
+        console.log(senddata, recvdata, "ss");
+        console.log(recvdata[1] / senddata[1], "yy");
+        let recvamount = value * (senddata[1] / recvdata[1]);
+        setReceiveAmount(recvamount);
         setSendAmount(value);
     };
 
@@ -283,39 +373,29 @@ const Content = () => {
             }
         } else if (window.xfi) {
             //memo(when receive token is thorchain token)
-            let memo = `=:${AssetRuneNative.chain}.${AssetRuneNative.symbol}:${thoraddress}`;
+            let memo = `=:${AssetRuneNative.chain}.${AssetRuneNative.symbol}:${thoraddress_xfi}`;
             if (receiveAsset === "BNB") {
-                memo = `=:${AssetBNB.chain}.${AssetBNB.symbol}:${bnbaddress}`;
+                memo = `=:${AssetBNB.chain}.${AssetBNB.symbol}:${bnbaddress_xfi}`;
             } else if (receiveAsset === "BCH") {
-                memo = `=:${AssetBCH.chain}.${AssetBCH.symbol}:${bchaddress}`;
+                memo = `=:${AssetBCH.chain}.${AssetBCH.symbol}:${bchaddress_xfi}`;
             } else if (receiveAsset === "BTC") {
-                memo = `=:${AssetBTC.chain}.${AssetBTC.symbol}:${bitcoinaddress}`;
+                memo = `=:${AssetBTC.chain}.${AssetBTC.symbol}:${bitcoinaddress_xfi}`;
             } else if (receiveAsset === "BUSD") {
-                memo = `=:${AssetBUSD.chain}.${AssetBUSD.symbol}:${bnbaddress}`;
+                memo = `=:${AssetBUSD.chain}.${AssetBUSD.symbol}:${bnbaddress_xfi}`;
             }
-            console.log(
-                xfiObject,
-                bnbaddress,
-                sendAmount,
-                memo,
-                ETH_DECIMAL,
-                "xfObject"
-            );
             if (sendAsset === "BNB") {
                 try {
-                    console.log(
-                        assetToBase(assetAmount(Number(sendAmount), 8)),
-                        "memo"
-                    );
                     window.xfi.binance.request(
                         {
                             method: "transfer",
                             params: [
                                 {
-                                    from: bnbaddress,
-                                    recipient: BNB_contract_address,
+                                    from: bnbaddress_xfi,
+                                    recipient: bnbaddress_xfi,
                                     amount: {
-                                        amount: Number(sendAmount),
+                                        amount:
+                                            Number(sendAmount) *
+                                            1000000000000000000,
                                         decimals: ETH_DECIMAL,
                                     },
                                     memo,
@@ -331,16 +411,18 @@ const Content = () => {
                     console.log(e, "error");
                 }
             } else if (sendAsset === "BTC") {
+                console.log(bitcoinaddress_xfi, "add");
+                console.log(memo, "memo");
                 xfiObject.bitcoin.request(
                     {
                         method: "transfer",
                         params: [
                             {
-                                from: bitcoinaddress,
-                                recipient: BTC_contract_address,
+                                from: bitcoinaddress_xfi,
+                                recipient: bitcoinaddress_xfi,
                                 feeRate: BTC_fee,
                                 amount: {
-                                    amount: Number(sendAmount),
+                                    amount: Number(sendAmount) * 100000000,
                                     decimals: 8,
                                 },
                                 memo,
@@ -359,11 +441,11 @@ const Content = () => {
                         method: "transfer",
                         params: [
                             {
-                                from: bchaddress,
-                                recipient: BCH_contract_address,
+                                from: bchaddress_xfi,
+                                recipient: bchaddress_xfi,
                                 feeRate: BCH_fee,
                                 amount: {
-                                    amount: Number(sendAmount),
+                                    amount: Number(sendAmount) * 100000000,
                                     decimals: BCH_DECIMAL,
                                 },
                                 memo,
@@ -382,10 +464,12 @@ const Content = () => {
                         params: [
                             {
                                 asset: AssetBUSD,
-                                from: bnbaddress,
-                                recipient: BNB_contract_address,
+                                from: bnbaddress_xfi,
+                                recipient: bnbaddress_xfi,
                                 amount: {
-                                    amount: Number(sendAmount),
+                                    amount:
+                                        Number(sendAmount) *
+                                        1000000000000000000,
                                     decimals: 18,
                                 },
                                 memo,
@@ -399,21 +483,19 @@ const Content = () => {
                     }
                 );
             } else if (sendAsset === "RUNE") {
-                console.log(thoraddress, "thor");
                 console.log(sendAmount, "thor");
                 console.log(memo, "thor");
                 try {
                     xfiObject.thorchain.request(
                         {
-                            method: "transfer",
+                            method: "deposit",
                             params: [
                                 {
                                     asset: AssetRuneNative,
-                                    from: thoraddress,
-                                    recipient:
-                                        "tthor1g98cy3n9mmjrpn0sxmn63lztelera37nrytwp2",
+                                    from: thoraddress_xfi,
+                                    recipient: thoraddress_xfi,
                                     amount: {
-                                        amount: Number(sendAmount),
+                                        amount: Number(sendAmount) * 100000000,
                                         decimals: 8,
                                     },
                                     memo,
@@ -433,6 +515,10 @@ const Content = () => {
             alert("Please connect your wallet!");
         }
     };
+
+    useEffect(() => {
+        onGetCoinPrice();
+    }, []);
 
     return (
         <>
